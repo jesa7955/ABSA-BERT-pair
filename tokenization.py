@@ -1,13 +1,13 @@
 # coding=utf-8
 
 # Reference: https://github.com/huggingface/pytorch-pretrained-BERT
-
 """Tokenization classes."""
 
 from __future__ import absolute_import, division, print_function
 
 import collections
 import unicodedata
+from pyknp import Juman
 
 import six
 
@@ -89,13 +89,15 @@ def whitespace_tokenize(text):
 
 class FullTokenizer(object):
     """Runs end-to-end tokenziation."""
-
     def __init__(self, vocab_file, do_lower_case=True):
         self.vocab = load_vocab(vocab_file)
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
     def tokenize(self, text):
+        jumanpp = Juman(jumanpp=True)
+        jumanpp_result = jumanpp.analysis(text)
+        text = " ".join([mrph.midasi for mrph in jumanpp_result.mrph_list()])
         split_tokens = []
         for token in self.basic_tokenizer.tokenize(text):
             for sub_token in self.wordpiece_tokenizer.tokenize(token):
@@ -109,7 +111,6 @@ class FullTokenizer(object):
 
 class BasicTokenizer(object):
     """Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
-
     def __init__(self, do_lower_case=True):
         """Constructs a BasicTokenizer.
 
@@ -180,7 +181,6 @@ class BasicTokenizer(object):
 
 class WordpieceTokenizer(object):
     """Runs WordPiece tokenization."""
-
     def __init__(self, vocab, unk_token="[UNK]", max_input_chars_per_word=100):
         self.vocab = vocab
         self.unk_token = unk_token
@@ -271,8 +271,8 @@ def _is_punctuation(char):
     # Characters such as "^", "$", and "`" are not in the Unicode
     # Punctuation class but we treat them as punctuation anyways, for
     # consistency.
-    if ((cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64) or
-            (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
+    if ((cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64)
+            or (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
         return True
     cat = unicodedata.category(char)
     if cat.startswith("P"):
